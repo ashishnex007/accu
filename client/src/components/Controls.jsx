@@ -175,7 +175,6 @@ const Controls = ({ onSendRequest, onLanguageChange, onSaveAndRun, onDownloadTex
                   <li>
                     Select any text region from the image using mouse-drag.
                   </li>
-                  <li>Double-tap on the region to delete the crop or use the delete key.</li>
                   <li>Scroll the mouse on the image to zoom-in and zoom-out</li>
                 </ul>
               </div>

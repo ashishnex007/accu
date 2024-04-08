@@ -36,6 +36,7 @@ class App extends Component {
     this.handleOCRTextChange = this.handleOCRTextChange.bind(this);
     this.handleSaveAndRun = this.handleSaveAndRun.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
+    // this.handleMouseDown = this.handleMouseDown.bind(this);
     this.state = {
       imgSrc: null,
       cropBoxesData: [],
@@ -81,31 +82,65 @@ class App extends Component {
     document.addEventListener("mouseup", this.handleMouseUp);
   }
 
-  handleMouseUp() {
+  handleMouseUp = (event) => {
     document.removeEventListener("mouseup", this.handleMouseUp);
-    const cropBoxDatas = this.cropper.getCropBoxDatas();
-    console.log(cropBoxDatas);
-    this.setState({ loading: false });
+    event.preventDefault();
+    event.stopPropagation();
 
-    const updatedCropBoxesData = cropBoxDatas.map((cropBoxData, index) => {
-      const existingCropBoxData = this.state.cropBoxesData[index] || {};
-      return {
-        ...existingCropBoxData,
-        ...cropBoxData,
-      };
+    const cropBoxDatas = this.cropper.getCropBoxDatas();
+    console.log("these are the initial crop boxes");
+    console.log(cropBoxDatas);
+
+    // const updatedCropBoxesData = cropBoxDatas.map((cropBoxData, index) => {
+    //   const existingCropBoxData = this.state.cropBoxesData[index] || {};
+    //   return {
+    //     ...existingCropBoxData,
+    //     ...cropBoxData,
+    //   };
+    // });
+
+    this.setState({ loading: false, cropBoxesData: cropBoxDatas }, () => {
+      this.sendCroppedImages({ language: "english", modality: "printed" });
     });
 
     // Update the state with the new crop box datas
-    this.setState(
-      {
-        cropBoxesData: updatedCropBoxesData,
-        boundingBoxCollection: this.state.boundingBoxCollection,
-      },
-      () => {
-        this.sendCroppedImages({ language: "english", modality: "printed" });
-      }
-    );
+    // this.setState(
+    //   {
+    //     cropBoxesData: updatedCropBoxesData,
+    //     boundingBoxCollection: this.state.boundingBoxCollection,
+    //   },
+    //   () => {
+    //     this.sendCroppedImages({ language: "english", modality: "printed" });
+    //   }
+    // );
   }
+
+  // handleMouseUp() {
+  //   document.removeEventListener("mouseup", this.handleMouseUp);
+    // const cropBoxDatas = this.cropper.getCropBoxDatas();
+    // console.log("these are the initial crop boxes");
+    // console.log(cropBoxDatas);
+    // this.setState({ loading: false });
+
+    // const updatedCropBoxesData = cropBoxDatas.map((cropBoxData, index) => {
+    //   const existingCropBoxData = this.state.cropBoxesData[index] || {};
+    //   return {
+    //     ...existingCropBoxData,
+    //     ...cropBoxData,
+    //   };
+    // });
+
+    // // Update the state with the new crop box datas
+    // this.setState(
+    //   {
+    //     cropBoxesData: updatedCropBoxesData,
+    //     boundingBoxCollection: this.state.boundingBoxCollection,
+    //   },
+    //   () => {
+    //     this.sendCroppedImages({ language: "english", modality: "printed" });
+    //   }
+    // );
+  // }
 
   // Cropbox events
   destroyCropBox() {
@@ -117,7 +152,7 @@ class App extends Component {
   };
 
   cropBuildOver = (event) => {
-    console.log(event);
+    // console.log(event);
   };
 
   /**
@@ -144,6 +179,8 @@ class App extends Component {
           });
         });
       });
+      console.log("cropped promises");
+      console.log(cropPromises);
       return Promise.all(cropPromises);
     }
     return Promise.resolve(croppedImages);
@@ -153,15 +190,18 @@ class App extends Component {
    * @send_cropBoxes
   * */
 
+   // there is something wrong here that's why there is inconsistency while sending the cropped images and getting same o/p
   async sendCroppedImages(options) {
     try {
       this.setState({ loading: true });
       const croppedImages = await this.getCroppedImages();
+      console.log("I am inside sending function");
       console.log(croppedImages);
 
       const language = this.state.language;
+      const updatedCropBoxesData = [...this.state.cropBoxesData];
 
-      console.log("length is" + croppedImages.length);
+      // console.log("length is" + croppedImages.length);
       for (let i = 0; i < croppedImages.length; i++) {
         const formData = new FormData();
         formData.append("image", croppedImages[i]);
@@ -170,7 +210,7 @@ class App extends Component {
         formData.append("modality", "printed"); // hard coded
 
         const response = await axios.post(
-          "http://localhost:5000/upload",
+          "10.4.16.80:5000/upload",
           formData,
           {
             headers: {
@@ -184,18 +224,24 @@ class App extends Component {
         let ocr = response.data.text;
 
         // console.log(ocr);
-        this.setState({ loading: false });
+        // this.setState({ loading: false });
 
-        const updatedCropBoxesData = [...this.state.cropBoxesData];
+        // const updatedCropBoxesData = [...this.state.cropBoxesData];
         updatedCropBoxesData[i] = {
           ...updatedCropBoxesData[i],
           ocrText: ocr,
         };
 
         this.setState({ cropBoxesData: updatedCropBoxesData });
+        // this.setState(prevState => ({
+        //   loading: false,
+        //   cropBoxesData: prevState.cropBoxesData.map((cropBox, index) =>
+        //     index === i ? { ...cropBox, ocrText: ocr } : cropBox
+        //   ),
+        // }));
       }
     } catch (error) {
-      console.error("Error sendingCroppedImages" + error);
+      console.error("Error sendingCroppedImages" + error); 
     }
   }
 
@@ -211,11 +257,11 @@ class App extends Component {
   render() {
     const { selectedButton } = this.state;
 
-    console.log(this.state.boundingBoxCollection);
-    console.log("current length is " + this.state.boundingBoxCollection.length);
+    // console.log(this.state.boundingBoxCollection); // to see the bounding boxes collection
+    // console.log("current length is " + this.state.boundingBoxCollection.length); // to see the length of bounding boxes
 
     var boundingBoxes = Array.from(document.querySelectorAll('.cropper-face'));
-    console.log(boundingBoxes);
+    // console.log(boundingBoxes); // to see the bounding boxes
 
     if (boundingBoxes.length > 0) {
       boundingBoxes.forEach(elem => {
@@ -409,7 +455,7 @@ class App extends Component {
         formData.append("modality", "printed");
 
         const response = await axios.post(
-          "http://localhost:5000/upload",
+          "10.4.16.80:5000/upload",
           formData,
           {
             headers: {

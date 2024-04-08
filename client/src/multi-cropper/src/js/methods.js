@@ -682,7 +682,7 @@ export default {
           cropBoxData.width = cropBoxData.height * aspectRatio;
         }
       }
-	  //console.log("did set cropBox data");
+	  //console.log("did set cropBox data"); // culprit for one sec
       self.renderCropBox();
     }
 
